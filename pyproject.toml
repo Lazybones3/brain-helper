@@ -12,5 +12,14 @@ dependencies = [
     "pandas",
     "peewee",
     "psycopg2-binary",
-    "tqdm"
+    "tqdm",
+    "pyyaml",
+    "requests",
+    "jinja2"
 ]
+
+[project.urls]
+Repository = "https://github.com/Lazybones3/brain-helper.git"
+
+[project.scripts]
+init_tables = "brain.database:init_tables"

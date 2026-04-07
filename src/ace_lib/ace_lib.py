@@ -945,7 +945,7 @@ def simulate_alpha_list_multi(
     s: SingleSession,
     alpha_list: list,
     limit_of_concurrent_simulations: int = 3,
-    limit_of_multi_simulations: int = 10,
+    limit_of_multi_simulations: int = 3,
     simulation_config: dict = DEFAULT_CONFIG,
 ) -> list:
     """

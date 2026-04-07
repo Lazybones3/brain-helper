@@ -1,7 +1,10 @@
+import time
 from typing import Literal, Optional
 import pandas as pd
+from requests.exceptions import RequestException
 
 import ace_lib as ace
+from brain.logger_util import logger
 
 
 class BrainApi:
@@ -10,6 +13,9 @@ class BrainApi:
     
     def check_session_and_relogin(self):
         self.session = ace.check_session_and_relogin(self.session)
+
+    def check_session_timeout(self) -> int:
+        return ace.check_session_timeout(self.session)
     
     def get_datasets(
         self,
@@ -58,9 +64,15 @@ class BrainApi:
         self,
         alpha_list: list,
         limit_of_concurrent_simulations: int = 3,
-        limit_of_multi_simulations: int = 10,
+        limit_of_multi_simulations: int = 3,
     ) -> list:
-        return ace.simulate_alpha_list_multi(self.session, alpha_list=alpha_list, limit_of_concurrent_simulations=limit_of_concurrent_simulations, limit_of_multi_simulations=limit_of_multi_simulations)
+        result = []
+        try:
+            result = ace.simulate_alpha_list_multi(self.session, alpha_list=alpha_list, limit_of_concurrent_simulations=limit_of_concurrent_simulations, limit_of_multi_simulations=limit_of_multi_simulations)
+        except RequestException as e:
+            logger.error(f"simulate_alpha_list_multi exception: {e}")
+            time.sleep(10)
+        return result
 
     def get_operators(self) -> pd.DataFrame:
         return ace.get_operators(self.session)

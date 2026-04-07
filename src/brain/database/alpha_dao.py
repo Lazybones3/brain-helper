@@ -1,28 +1,9 @@
-import yaml
 import hashlib
 import json
 from typing import List, Optional
-
-from peewee import CharField, DateTimeField, Model, PostgresqlDatabase
 from datetime import datetime, timezone
-from .logger_util import logger
-
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-db_settings = config["postgresql"]
-db = PostgresqlDatabase(**db_settings)
-
-class AlphaEntity(Model):
-    alpha_id = CharField(max_length=50, primary_key=True)
-    alpha_hashed = CharField(max_length=100)
-    expression = CharField(max_length=255)
-    create_time = DateTimeField(default=datetime.now)
-
-    class Meta:
-        database = db
-        table_name = 'alpha_entity'
-
+from brain.database import AlphaEntity
+from brain.logger_util import logger
 
 def hash_alpha(alpha_dict: dict) -> str:
     alpha_str = json.dumps(alpha_dict, sort_keys=True)
@@ -30,13 +11,18 @@ def hash_alpha(alpha_dict: dict) -> str:
 
 class AlphaDao:
     @staticmethod
-    def add_to_cache(alpha_dict: dict, alpha_id: str):
+    def add_to_cache(alpha_dict: dict, alpha_id: str, dataset_id: str):
         alpha_hashed = hash_alpha(alpha_dict)
+        existed = AlphaEntity.select().where(AlphaEntity.alpha_id==alpha_id).exists()
+        if existed:
+            logger.debug(f"alpha exists: {alpha_id}")
+            return
         # Append new record
         new_row = AlphaEntity.create(
             alpha_hashed=alpha_hashed,
             alpha_id=alpha_id,
             expression=alpha_dict['regular'],
+            dataset_id=dataset_id,
             create_time=datetime.now(timezone.utc),
         )
         logger.debug(f"add alpha to database: {new_row.alpha_id}")
@@ -56,7 +42,9 @@ class AlphaDao:
         end_time = datetime.strptime(end, fmt)
         query = AlphaEntity.select().where(AlphaEntity.create_time.between(start_time, end_time))
         return list(query)
-
-if __name__ == '__main__':
-    db.connect()
-    db.create_tables([AlphaEntity])
+    
+    @staticmethod
+    def query_alphas_by_dataset(dataset_id: str) -> List[AlphaEntity]:
+        query = AlphaEntity.select().where(AlphaEntity.dataset_id == dataset_id)
+        return list(query)
+    
