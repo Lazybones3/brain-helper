@@ -1,0 +1,1 @@
+pub const BRAIN_API_URL: &str = "https://api.worldquantbrain.com";

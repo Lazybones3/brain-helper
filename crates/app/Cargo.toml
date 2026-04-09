@@ -1,0 +1,14 @@
+[package]
+name = "brain-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brain-common = { path = "../common" }
+brain-api = { path = "../api" }
+brain-database = { path = "../database" }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+jiff = { workspace = true }

@@ -1,0 +1,12 @@
+[package]
+name = "brain-database"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+brain-common = { path = "../common" }
+tokio = { workspace = true }
+toasty = { workspace = true }
+jiff = { workspace = true }
+rust_decimal = { workspace = true }
+anyhow = { workspace = true }
