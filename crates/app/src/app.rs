@@ -1,13 +1,15 @@
 use brain_api::{self, AlphaConfig, Settings, response::datafield::DataField};
 use brain_database::{alpha_dao, entity::AlphaEntity};
+use futures::StreamExt;
 use jiff::Zoned;
+use tracing::{error, info, warn};
 
-pub struct BrainApp {
+pub struct BrainAppCore {
     settings: Settings,
     theme: Option<bool>,
 }
 
-impl BrainApp {
+impl BrainAppCore {
     pub async fn new(settings: Settings) -> anyhow::Result<Self> {
         brain_api::start_session().await?;
         Ok(Self {
@@ -16,8 +18,7 @@ impl BrainApp {
         })
     }
 
-    pub async fn get_fields_by_dataset(&self, dataset_name: &str, field_type_opt: Option<String>) -> anyhow::Result<Vec<DataField>> {
-        let field_type = field_type_opt.unwrap_or("MATRIX".to_string());
+    pub async fn get_fields_by_dataset(&self, dataset_name: &str) -> anyhow::Result<Vec<DataField>> {
         let datafields = brain_api::get_datafields(
             &self.settings.instrument_type,
             &self.settings.region,
@@ -27,34 +28,31 @@ impl BrainApp {
         )
         .await?;
         let result = datafields.into_iter()
-            .filter(|item| item.dataset.name.eq(&dataset_name) && item.field_type.eq(&field_type))
+            .filter(|item| item.dataset.name.eq(&dataset_name))
             .collect::<Vec<DataField>>();
         Ok(result)
     }
 
-    pub async fn simulation(&self, dataset_name: &str, field_type_opt: Option<String>, template: Option<String>) -> anyhow::Result<()> {
-        let result = self.get_fields_by_dataset(dataset_name, field_type_opt).await?;
-        let mut alpha_list = Vec::new();
-        for item in result {
-            let regular = match template {
-                Some(ref t) => t.replace("<field>", &item.id),
-                None => item.id
-            };
-            println!("regular: {}", regular);
-            let alpha_config = AlphaConfig::Regular {
-                settings: self.settings.clone(),
-                regular,
-            };
-            let entity = alpha_config_to_entity(&alpha_config, None, None);
-            let flag = alpha_dao::check_if_exist(&entity).await?;
-            if !flag {
-                alpha_list.push(alpha_config);
-            }
-        }
+    pub async fn simulation(&self, dataset_name: &str, alpha_list: Vec<AlphaConfig>) -> anyhow::Result<()> {
         if alpha_list.is_empty() {
-            println!("alpha list is empty");
+            warn!("alpha list is empty");
             return Ok(());
         }
+        info!("Total alpha: {}", alpha_list.len());
+        let filtered_alpha_list = futures::stream::iter(alpha_list).filter_map(|item| async move {
+            let entity = alpha_config_to_entity(&item, None, None);
+            match alpha_dao::check_if_exist(&entity).await {
+                Ok(exists) =>  {
+                    if !exists {
+                        return Some(item);
+                    }
+                },
+                Err(e) => { error!("Filter alpha list error: {}", e); }
+            }
+            None
+        }).collect::<Vec<AlphaConfig>>().await;
+        info!("Filtered total alpha: {}", filtered_alpha_list.len());
+
         let settings_clone = self.settings.clone();
         let dataset_clone = dataset_name.to_string();
         let api = brain_api::BrainApi::new(move |result| {
@@ -69,7 +67,7 @@ impl BrainApp {
                 let _ = alpha_dao::create(entity).await.unwrap();
             }
         });
-        let _ = api.simulate_alpha_list_multi(alpha_list, 3, 3).await;
+        let _ = api.simulate_alpha_list_multi(filtered_alpha_list, 3, 3).await;
 
         Ok(())
     }

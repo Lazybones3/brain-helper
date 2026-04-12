@@ -29,3 +29,13 @@ pub async fn get() -> toasty::Db {
 pub async fn init_table() {
     get().await.push_schema().await.expect("Init talbe failed");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_init_table() {
+        init_table().await;
+    }
+}

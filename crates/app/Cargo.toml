@@ -3,9 +3,13 @@ name = "brain-app"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "brain-mcp"
-path = "src/mcp.rs"
+# [[bin]]
+# name = "brain-mcp"
+# path = "src/mcp.rs"
+
+[lib]
+name = "brain_helper"
+crate-type = ["cdylib"]
 
 [dependencies]
 brain-common = { path = "../common" }
@@ -18,3 +22,7 @@ tracing-subscriber = { workspace = true }
 jiff = { workspace = true }
 rmcp = { workspace = true }
 serde = { workspace = true }
+pyo3 = { workspace = true }
+pyo3-async-runtimes = { workspace = true }
+pythonize = { workspace = true }
+futures = { workspace = true }
