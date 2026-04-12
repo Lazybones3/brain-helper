@@ -3,7 +3,7 @@ mod middleware;
 mod objects;
 mod session;
 mod utils;
-mod response;
+pub mod response;
 pub mod parameter;
 pub use parameter::*;
 pub mod brain_api;

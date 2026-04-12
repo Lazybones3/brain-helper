@@ -6,6 +6,7 @@ use rust_decimal::Decimal;
 pub struct AlphaEntity {
     #[key]
     pub id: String,
+    pub dataset: String,
     pub crete_time: DateTime,
     #[default("".to_string())]
     pub regular: String,

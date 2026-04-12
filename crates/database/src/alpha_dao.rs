@@ -9,6 +9,7 @@ pub async fn create(entity: AlphaEntity) -> anyhow::Result<AlphaEntity> {
     }
     let result = AlphaEntity::create()
         .id(entity.id)
+        .dataset(entity.dataset)
         .crete_time(entity.crete_time)
         .regular(entity.regular)
         .instrument_type(entity.instrument_type)

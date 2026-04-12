@@ -13,8 +13,7 @@ use crate::{
     objects::Credentials,
     parameter::{AlphaConfig, Settings},
     response::{
-        ResultsResponse, auth::AuthResponse, datafield::DataField, dataset::Dataset,
-        simulation::SimulationResult,
+        ResultsResponse, auth::AuthResponse, datafield::DataField, dataset::Dataset, operator::Operator, simulation::SimulationResult
     },
     session, utils,
 };
@@ -34,15 +33,15 @@ pub async fn start_session() -> anyhow::Result<()> {
 
     if status == reqwest::StatusCode::UNAUTHORIZED {
         if let Some(loc) = headers.get("Location") {
-            let persona_url = loc.to_str().unwrap();
-            println!("Complete biometrics authentication at: {}", persona_url);
+            let personal_url = loc.to_str().unwrap();
+            println!("Complete biometrics authentication at: {}", personal_url);
             println!("Press Enter once finished...");
             let mut dummy = String::new();
             std::io::stdin().read_line(&mut dummy).ok();
 
             // Verification loop
             loop {
-                let check = client.post(persona_url).send().await?;
+                let check = client.post(personal_url).send().await?;
                 if check.status() == reqwest::StatusCode::CREATED {
                     break;
                 }
@@ -126,7 +125,9 @@ pub async fn get_datasets(
 
     let res = client.get(url).query(&query_params).send().await?;
     let status = res.status();
-    let body: ResultsResponse<Dataset> = res.json().await?;
+    let json_body: serde_json::Value = res.json().await?;
+    debug!("get_datasets response body: {}", json_body);
+    let body: ResultsResponse<Dataset> = serde_json::from_value(json_body)?;
     info!("get_datasets status: {}, count: {}", status, body.count);
     Ok(body.results)
 }
@@ -163,9 +164,21 @@ pub async fn get_datafields(
     }
     let res = client.get(url).query(&query_params).send().await?;
     let status = res.status();
-    let body: ResultsResponse<DataField> = res.json().await?;
+    let json_body: serde_json::Value = res.json().await?;
+    debug!("get_datafields response body: {}", json_body);
+    let body: ResultsResponse<DataField> = serde_json::from_value(json_body)?;
     info!("get_datafields status: {}, count: {}", status, body.count);
     Ok(body.results)
+}
+
+pub async fn get_operators() -> anyhow::Result<Vec<Operator>> {
+    let client = session::global();
+    let url = format!("{}/operators", BRAIN_API_URL);
+    let response = client.get(url).send().await?;
+    let json_body: serde_json::Value = response.json().await?;
+    debug!("get_operators response body: {}", json_body);
+    let body: Vec<Operator> = serde_json::from_value(json_body)?;
+    Ok(body)
 }
 
 pub fn generate_alpha(
