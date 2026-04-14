@@ -24,7 +24,7 @@ impl BrainAppCore {
             &self.settings.region,
             self.settings.delay,
             &self.settings.universe,
-            &dataset_name,
+            None,
         )
         .await?;
         let result = datafields.into_iter()

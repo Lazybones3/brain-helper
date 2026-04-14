@@ -1,3 +1,5 @@
 /target
 .vscode/
+.venv/
+notebook/
 application.yml

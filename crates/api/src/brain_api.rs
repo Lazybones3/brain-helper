@@ -137,7 +137,7 @@ pub async fn get_datafields(
     region: &str,
     delay: i32,
     universe: &str,
-    search: &str,
+    search_opt: Option<String>,
 ) -> anyhow::Result<Vec<DataField>> {
     let client = session::global();
     let url = format!("{}/data-fields", BRAIN_API_URL);
@@ -148,14 +148,14 @@ pub async fn get_datafields(
         ("delay", delay.to_string()),
         ("universe", universe.to_string()),
     ];
-    if !search.is_empty() {
-        query_params.push(("search", search.to_string()));
-        query_params.push(("limit", "50".to_string()));
-        query_params.push(("offset", "0".to_string()));
+    if let Some(search) = search_opt {
         info!(
             "Getting fields for: region={}, delay={}, universe={}, search={}",
             region, delay, universe, search
         );
+        query_params.push(("search", search));
+        query_params.push(("limit", "50".to_string()));
+        query_params.push(("offset", "0".to_string()));
     } else {
         info!(
             "Getting fields for: region={}, delay={}, universe={}",
